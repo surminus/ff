@@ -5,12 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 var directory string
-var exact bool
+var exact, nocolour bool
 var ignoredir []string
 
 // Executes the Cobra function
@@ -21,6 +23,8 @@ func main() {
 // find lists files that matches a pattern in a specific directory
 func find(filename string) {
 	var foundFiles bool
+
+	red := color.New(color.FgRed).SprintFunc()
 
 	if !exact {
 		filename = ".*" + filename + ".*"
@@ -44,6 +48,10 @@ func find(filename string) {
 				if !foundFiles {
 					foundFiles = true
 				}
+				if !nocolour {
+					filename = strings.Replace(filename, ".*", "", -1)
+					path = strings.Replace(path, filename, red(filename), -1)
+				}
 				fmt.Println(path)
 			} else if err != nil {
 				fmt.Println(err)
@@ -66,6 +74,7 @@ func execute() {
 	cmd.PersistentFlags().StringVarP(&directory, "dir", "d", ".", "Specify directory to search in")
 	cmd.PersistentFlags().StringSliceVar(&ignoredir, "ignore-dir", []string{}, "Do not search in the specified directory. Can be specified multiple times")
 	cmd.PersistentFlags().BoolVarP(&exact, "exact", "e", false, "Only return results if the name matches exactly")
+	cmd.PersistentFlags().BoolVar(&nocolour, "no-colour", false, "Disable outputting in colour")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
