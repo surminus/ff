@@ -39,18 +39,34 @@ func find(filename string) {
 				}
 			}
 
-			matched, err := regexp.MatchString(filename, path)
-			if matched && err == nil {
-				if !foundFiles {
-					foundFiles = true
+			// Only work on files, not directories
+			if !info.IsDir() {
+				matched, err := regexp.MatchString(filename, filepath.Base(path))
+				if matched && err == nil {
+					if !foundFiles {
+						foundFiles = true
+					}
+
+					// We want to highlight only the name of the file in path,
+					// not any directory names since we are only matching files
+					if !nocolour {
+						// Split the path into a slice
+						pathSlice := strings.Split(path, "/")
+						// Fetch the name of the file
+						match := pathSlice[len(pathSlice)-1]
+						// Remove the original file name
+						pathSlice = pathSlice[:len(pathSlice)-1]
+						// Re-colour the match in the filename only and add
+						// back to slice
+						pathSlice = append(pathSlice, strings.Replace(match, filename, red(filename), -1))
+						// Rejoin the slice
+						path = strings.Join(pathSlice, "/")
+					}
+
+					fmt.Println(path)
+				} else if err != nil {
+					return err
 				}
-				if !nocolour {
-					filename = strings.Replace(filename, ".*", "", -1)
-					path = strings.Replace(path, filename, red(filename), -1)
-				}
-				fmt.Println(path)
-			} else if err != nil {
-				return err
 			}
 
 			return nil
