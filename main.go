@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -27,25 +28,38 @@ func main() {
 	execute()
 }
 
-// find lists files that matches a pattern
-func find(filename string) []string {
-	files, err := filepath.Glob("*" + filename + "*")
-
+func directories(d string) []os.FileInfo {
+	var dirs []os.FileInfo
+	files, err := ioutil.ReadDir(d)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	for _, file := range files {
+		if file.IsDir() {
+			dirs = append(dirs, file)
+		}
+	}
+	return dirs
+}
 
-	return files
+// find lists files that matches a pattern
+func find(dir, filename string) {
+	for _, d := range directories(dir) {
+		files, err := filepath.Glob(filepath.Join(d.Name(), "/*"+filename+"*"))
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		output(files)
+	}
 }
 
 // output simply prints the slice of files and exits with an error if none
 // are found
 func output(files []string) {
-	if len(files) < 1 {
-		os.Exit(1)
-	}
-
 	for _, f := range files {
 		fmt.Println(f)
 	}
@@ -69,6 +83,6 @@ var cmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		output(find(args[0]))
+		find(".", args[0])
 	},
 }
