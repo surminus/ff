@@ -85,10 +85,24 @@ func execute() {
 var cmd = &cobra.Command{
 	Use:   "ff",
 	Short: "Find a file matching a given name",
-	Long:  `Find a file matching a given name`,
+	Long: `Find a file matching a given name.
+
+Specify the pattern as the first argument:
+
+ff [filename]
+
+By default it wraps the filename in a wildcard expression, so "foo" would
+be defined by the regex:
+
+/.*foo.*/
+
+The "-e" flag removes this wildcard expression, so further exact patterns may
+be passed in.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println("Please supply a file to search for")
+			fmt.Println()
+			cmd.Usage()
 			os.Exit(1)
 		}
 
