@@ -11,6 +11,7 @@ import (
 
 var directory string
 var exact bool
+var ignoredir []string
 
 // Executes the Cobra function
 func main() {
@@ -28,14 +29,26 @@ func find(filename string) {
 	err := filepath.Walk(directory,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				fmt.Println(err)
 				return err
 			}
-			if matched, _ := regexp.MatchString(filename, path); matched {
+
+			for _, ignored := range ignoredir {
+				if info.IsDir() && info.Name() == ignored {
+					return filepath.SkipDir
+				}
+			}
+
+			matched, err := regexp.MatchString(filename, path)
+			if matched && err == nil {
 				if !foundFiles {
 					foundFiles = true
 				}
 				fmt.Println(path)
+			} else if err != nil {
+				fmt.Println(err)
 			}
+
 			return nil
 		})
 
@@ -51,6 +64,7 @@ func find(filename string) {
 
 func execute() {
 	cmd.PersistentFlags().StringVarP(&directory, "dir", "d", ".", "Specify directory to search in")
+	cmd.PersistentFlags().StringSliceVar(&ignoredir, "ignore-dir", []string{}, "Do not search in the specified directory. Can be specified multiple times")
 	cmd.PersistentFlags().BoolVarP(&exact, "exact", "e", false, "Only return results if the name matches exactly")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
