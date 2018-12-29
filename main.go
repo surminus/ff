@@ -54,7 +54,7 @@ func find(filename string) {
 				}
 				fmt.Println(path)
 			} else if err != nil {
-				fmt.Println(err)
+				return err
 			}
 
 			return nil
