@@ -1,71 +1,57 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/spf13/cobra"
 )
+
+var directory string
+var exact bool
 
 // Executes the Cobra function
 func main() {
 	execute()
 }
 
-func directories(d string) []os.FileInfo {
-	var dirs []os.FileInfo
-	files, err := ioutil.ReadDir(d)
+// find lists files that matches a pattern in a specific directory
+func find(filename string) {
+	var foundFiles bool
+
+	if !exact {
+		filename = ".*" + filename + ".*"
+	}
+
+	err := filepath.Walk(directory,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if matched, _ := regexp.MatchString(filename, path); matched {
+				if !foundFiles {
+					foundFiles = true
+				}
+				fmt.Println(path)
+			}
+			return nil
+		})
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	for _, file := range files {
-		if file.IsDir() {
-			dirs = append(dirs, file)
-		}
-	}
-	return dirs
-}
 
-// find lists files that matches a pattern
-func find(dir, filename string) {
-	for _, d := range directories(dir) {
-		files, err := filepath.Glob(filepath.Join(d.Name(), "/*"+filename+"*"))
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		output(files)
-	}
-}
-
-// output simply prints the slice of files and exits with an error if none
-// are found
-func output(files []string) {
-	for _, f := range files {
-		fmt.Println(f)
+	if !foundFiles {
+		os.Exit(1)
 	}
 }
 
 func execute() {
+	cmd.PersistentFlags().StringVarP(&directory, "dir", "d", ".", "Specify directory to search in")
+	cmd.PersistentFlags().BoolVarP(&exact, "exact", "e", false, "Only return results if the name matches exactly")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -83,6 +69,6 @@ var cmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		find(".", args[0])
+		find(args[0])
 	},
 }
